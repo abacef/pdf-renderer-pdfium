@@ -7,6 +7,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import io.github.abacef.pdfium.Pdfium;
 import io.github.abacef.pdfium.fpdf_formfill.FPDF_FORMFILLINFO;
+import io.github.abacef.pdfium.fpdf_view.FPDF_LIBRARY_CONFIG;
 import io.github.abacef.renderer.exceptions.PdfiumException;
 import lombok.Builder;
 import lombok.Data;
@@ -18,10 +19,21 @@ import java.util.stream.IntStream;
 
 public class PdfRenderer {
 
+    private static final int POINTS_PER_INCH = 72;
+
     private final Pdfium pdfium;
 
     public PdfRenderer() {
         this.pdfium = Pdfium.newInstance();
+
+        val config = new FPDF_LIBRARY_CONFIG();
+        config.version = 2;
+        config.m_pUserFontPaths = null;
+        config.m_pIsolate = null;
+        config.m_v8EmbedderSlot = 0;
+        config.m_pPlatform = null;
+        pdfium.FPDF_InitLibraryWithConfig(config);
+        this.pdfium.FPDF_InitLibraryWithConfig(config);
     }
 
     private Pointer loadDocument(
@@ -29,7 +41,7 @@ public class PdfRenderer {
             final int pdfBytesLen,
             final IntByReference errorCode
     ) {
-        val doc = pdfium.FPDF_LoadMemDocument(PdfBytes, pdfBytesLen, Pointer.NULL);
+        val doc = pdfium.FPDF_LoadMemDocument(PdfBytes, pdfBytesLen, null);
         if (doc == null) {
             errorCode.setValue(pdfium.FPDF_GetLastError().intValue());
             return Pointer.NULL;
@@ -54,8 +66,6 @@ public class PdfRenderer {
             return null;
         }
 
-        pdfium.FPDF_SetFormFieldHighlightColor(form, Pdfium.FPDF_FORMFIELD_UNKNOWN, new NativeLong(0xFFE4dd));
-        pdfium.FPDF_SetFormFieldHighlightAlpha(form, (byte)100);
         pdfium.FORM_DoDocumentOpenAction(form);
 
         return form;
@@ -110,11 +120,11 @@ public class PdfRenderer {
             final int dpi
     ) {
         val pageWidthInPoints = pdfium.FPDF_GetPageWidthF(page);
-        val pageWidthInInches = pageWidthInPoints / 72;
+        val pageWidthInInches = pageWidthInPoints / POINTS_PER_INCH;
         val width = (int)(pageWidthInInches * dpi);
 
         val pageHeightInPoints = pdfium.FPDF_GetPageHeightF(page);
-        val pageHeightInInches = pageHeightInPoints / 72;
+        val pageHeightInInches = pageHeightInPoints / POINTS_PER_INCH;
         val height = (int)(pageHeightInInches * dpi);
 
         val alpha = pdfium.FPDFPage_HasTransparency(page);

@@ -17,6 +17,7 @@ public class PdfRendererTest {
         val bytes = Files.readAllBytes(Paths.get("src/test/resources/sample_doc.pdf"));
 
         val renderer = new PdfRenderer();
+
         val res = renderer.renderPdfPageToImage(bytes, 0, 300);
         File out = new File("src/test/resources/sampleOutput.png");
         ImageIO.write(res, "png", out);
