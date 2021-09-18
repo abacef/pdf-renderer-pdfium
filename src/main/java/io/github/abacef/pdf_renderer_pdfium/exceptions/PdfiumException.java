@@ -1,4 +1,4 @@
-package io.github.abacef.renderer.exceptions;
+package io.github.abacef.pdf_renderer_pdfium.exceptions;
 
 import lombok.NonNull;
 
@@ -31,7 +31,7 @@ public class PdfiumException extends Exception {
             case FPDF_ERR_PAGE:
                 return new PdfiumPageException();
             default:
-                return null;
+                throw new IllegalArgumentException();
         }
     }
 }

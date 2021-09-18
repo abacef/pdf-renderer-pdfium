@@ -1,4 +1,4 @@
-package io.github.abacef.renderer.exceptions;
+package io.github.abacef.pdf_renderer_pdfium.exceptions;
 
 // FPDF_ERR_PASSWORD = 4
 public class PdfiumPasswordException extends PdfiumException {

@@ -1,4 +1,4 @@
-package io.github.abacef.renderer.exceptions;
+package io.github.abacef.pdf_renderer_pdfium.exceptions;
 
 // FPDF_ERR_FORMAT = 3
 public class PdfiumFormatException extends PdfiumException {

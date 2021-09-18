@@ -1,4 +1,4 @@
-package io.github.abacef.renderer;
+package io.github.abacef.pdf_renderer_pdfium.renderers;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -8,16 +8,19 @@ import com.sun.jna.ptr.IntByReference;
 import io.github.abacef.pdfium.Pdfium;
 import io.github.abacef.pdfium.fpdf_formfill.FPDF_FORMFILLINFO;
 import io.github.abacef.pdfium.fpdf_view.FPDF_LIBRARY_CONFIG;
-import io.github.abacef.renderer.exceptions.PdfiumException;
+import io.github.abacef.pdf_renderer_pdfium.exceptions.PdfiumException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.val;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.stream.IntStream;
 
-public class PdfRenderer {
+public class PdfRenderer implements PDFRenderer {
 
     private static final int POINTS_PER_INCH = 72;
 
@@ -149,7 +152,33 @@ public class PdfRenderer {
                 .build();
     }
 
-    public BufferedImage renderPdfPageToImage(
+    private enum OutputImageType {
+        PNG,
+        JPG
+    }
+
+    private byte[] bufferedImageToBytes(
+            final int width,
+            final int height,
+            final int[] bitmap,
+            final @NonNull OutputImageType imageType
+    ) throws IOException {
+        switch (imageType) {
+            case PNG:
+                val bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+                bufferedImage.setRGB(0, 0, width, height, bitmap, 0, width);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(bufferedImage, "png", baos);
+                return baos.toByteArray();
+            case JPG:
+                throw new IllegalArgumentException("Currently we do not support rendering an image in JPEG");
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public byte[] render(
             final @NonNull byte[] pdfBytes,
             final int pageNum,
             final int dpi
@@ -183,25 +212,31 @@ public class PdfRenderer {
         }
 
         val bitmapRenderReturn = renderPageToBitmap(page, form, dpi);
-        BufferedImage image = null;
+        byte[] bytesReturn = null;
         if (bitmapRenderReturn == null) {
             closeRenderPage(page);
         } else {
             val width = bitmapRenderReturn.getWidth();
             val height = bitmapRenderReturn.getHeight();
-            val buffer = bitmapRenderReturn.getBuffer();
-
-            val bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+            val bufferPointer = bitmapRenderReturn.getBuffer();
             val pixelCount = width * height;
-            val javaBuffer = buffer.getIntArray(0, pixelCount);
-            bufferedImage.setRGB(0, 0, width, height, javaBuffer, 0, width);
-            image = bufferedImage;
+            val javaBuffer = bufferPointer.getIntArray(0, pixelCount);
+            try {
+                bytesReturn = bufferedImageToBytes(
+                        bitmapRenderReturn.getWidth(),
+                        bitmapRenderReturn.getHeight(),
+                        javaBuffer,
+                        OutputImageType.PNG);
+            } catch (IOException ioe) {
+                bytesReturn = null;
+            }
         }
 
         closePage(page, form);
         closeForm(form);
         closeDocument(doc);
         closeLibrary();
-        return image;
+
+        return bytesReturn;
     }
 }

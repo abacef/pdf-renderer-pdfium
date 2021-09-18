@@ -1,11 +1,10 @@
-package io.github.abacef.renderer;
+package io.github.abacef.pdf_renderer_pdfium;
 
-import io.github.abacef.renderer.exceptions.PdfiumException;
+import io.github.abacef.pdf_renderer_pdfium.exceptions.PdfiumException;
+import io.github.abacef.pdf_renderer_pdfium.renderers.PdfRenderer;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -18,8 +17,6 @@ public class PdfRendererTest {
 
         val renderer = new PdfRenderer();
 
-        val res = renderer.renderPdfPageToImage(bytes, 0, 300);
-        File out = new File("src/test/resources/sampleOutput.png");
-        ImageIO.write(res, "png", out);
+        renderer.render(bytes, 0, 300);
     }
 }

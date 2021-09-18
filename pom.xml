@@ -39,6 +39,7 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- PDFium -->
         <dependency>
             <groupId>io.github.abacef</groupId>
             <artifactId>pdfium</artifactId>
@@ -58,7 +59,7 @@
                 <version>2.22.2</version>
             </plugin>
 
-            <!-- Run checkstyle before the code is compiled, and dont fail on error -->
+            <!-- Run checkstyle before the code is compiled, and don't fail on error -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
@@ -101,6 +102,27 @@
                         <version>4.4.0</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.6</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
