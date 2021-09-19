@@ -20,14 +20,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.stream.IntStream;
 
-public class PdfRenderer implements PDFRenderer {
-
-    private static final int POINTS_PER_INCH = 72;
+/**
+ * Renders a page of a PDF to a PNG image at the specified DPI
+ */
+public final class RenderWithForms extends PDFRenderer {
 
     private final Pdfium pdfium;
 
-    public PdfRenderer() {
-        this.pdfium = Pdfium.newInstance();
+    private RenderWithForms() {
+        this.pdfium = initLibraryWithConfig();
+    }
+
+    private Pdfium initLibraryWithConfig() {
+        val pdfiumLocal = Pdfium.newInstance();
 
         val config = new FPDF_LIBRARY_CONFIG();
         config.version = 2;
@@ -35,8 +40,9 @@ public class PdfRenderer implements PDFRenderer {
         config.m_pIsolate = null;
         config.m_v8EmbedderSlot = 0;
         config.m_pPlatform = null;
-        pdfium.FPDF_InitLibraryWithConfig(config);
-        this.pdfium.FPDF_InitLibraryWithConfig(config);
+        pdfiumLocal.FPDF_InitLibraryWithConfig(config);
+
+        return pdfiumLocal;
     }
 
     private Pointer loadDocument(
@@ -177,44 +183,53 @@ public class PdfRenderer implements PDFRenderer {
         }
     }
 
-    @Override
-    public byte[] render(
+    public static byte[] render(
             final @NonNull byte[] pdfBytes,
             final int pageNum,
             final int dpi
     ) throws PdfiumException {
+        if (pdfBytes.length == 0) {
+            throw new IllegalArgumentException("There must be bytes in the passed in byte array");
+        } else if (pageNum < 0) {
+            throw new IllegalArgumentException("Page number to render must not be negative");
+        } else if (dpi <= 0) {
+            throw new IllegalArgumentException("DPI must be greater than zero");
+        }
+
+        val render = new RenderWithForms();
+
         val pdfBytesMemory = new Memory((long) pdfBytes.length * Native.getNativeSize(Byte.TYPE));
         IntStream.range(0, pdfBytes.length).forEach(i ->
                 pdfBytesMemory.setByte((long) i * Native.getNativeSize(Byte.TYPE), pdfBytes[i]));
 
         IntByReference errorCode = new IntByReference();
 
-        val doc = loadDocument(pdfBytesMemory, pdfBytes.length, errorCode);
+        val doc = render.loadDocument(pdfBytesMemory, pdfBytes.length, errorCode);
         if (doc == null) {
-            closeLibrary();
+            render.closeLibrary();
             throw PdfiumException.exceptionNumberToException(errorCode.getValue());
         }
 
-        val formFillInfo = makeFormFillInfo();
-        val form = loadForm(doc, formFillInfo, errorCode);
+        val formFillInfo = render.makeFormFillInfo();
+        val form = render.loadForm(doc, formFillInfo, errorCode);
         if (form == null) {
-            closeDocument(doc);
-            closeLibrary();
+            render.closeDocument(doc);
+            render.closeLibrary();
             throw PdfiumException.exceptionNumberToException(errorCode.getValue());
         }
 
-        val page = loadPage(doc, form, pageNum, errorCode);
+        val page = render.loadPage(doc, form, pageNum, errorCode);
         if (page == null) {
-            closeForm(form);
-            closeDocument(doc);
-            closeLibrary();
+            render.closeForm(form);
+            render.closeDocument(doc);
+            render.closeLibrary();
             throw PdfiumException.exceptionNumberToException(errorCode.getValue());
         }
 
-        val bitmapRenderReturn = renderPageToBitmap(page, form, dpi);
+        val bitmapRenderReturn = render.renderPageToBitmap(page, form, dpi);
         byte[] bytesReturn = null;
         if (bitmapRenderReturn == null) {
-            closeRenderPage(page);
+            render.closeRenderPage(page);
         } else {
             val width = bitmapRenderReturn.getWidth();
             val height = bitmapRenderReturn.getHeight();
@@ -222,7 +237,7 @@ public class PdfRenderer implements PDFRenderer {
             val pixelCount = width * height;
             val javaBuffer = bufferPointer.getIntArray(0, pixelCount);
             try {
-                bytesReturn = bufferedImageToBytes(
+                bytesReturn = render.bufferedImageToBytes(
                         bitmapRenderReturn.getWidth(),
                         bitmapRenderReturn.getHeight(),
                         javaBuffer,
@@ -232,10 +247,10 @@ public class PdfRenderer implements PDFRenderer {
             }
         }
 
-        closePage(page, form);
-        closeForm(form);
-        closeDocument(doc);
-        closeLibrary();
+        render.closePage(page, form);
+        render.closeForm(form);
+        render.closeDocument(doc);
+        render.closeLibrary();
 
         return bytesReturn;
     }
