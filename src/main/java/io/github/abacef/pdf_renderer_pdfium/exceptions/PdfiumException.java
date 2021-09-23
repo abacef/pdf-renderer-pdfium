@@ -12,7 +12,7 @@ public class PdfiumException extends Exception {
     private static final int FPDF_ERR_SECURITY = 5;   // Unsupported security scheme.
     private static final int FPDF_ERR_PAGE = 6;       // Page not found or content error.
 
-    public PdfiumException(final @NonNull String message) {
+    PdfiumException(final @NonNull String message) {
         super(message);
     }
 

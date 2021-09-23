@@ -27,7 +27,9 @@
         <module name="DeclarationOrder"/>
         <module name="EmptyStatement"/>
         <module name="EqualsAvoidNull"/>
-        <module name="HiddenField"/>
+        <module name="HiddenField">
+            <property name="ignoreConstructorParameter" value="true"/>
+        </module>
         <module name="IllegalCatch"/>
         <module name="EmptyBlock"/>
         <module name="IllegalThrows"/>
