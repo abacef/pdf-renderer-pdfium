@@ -14,9 +14,9 @@ import java.util.stream.IntStream;
 public class Document implements AutoCloseable {
 
     @AllArgsConstructor
-    private static class Resources {
-        private final Pointer documentPointer;
-        private final Pdfium pdfium;
+    static class Resources {
+        private @NonNull final Pointer documentPointer;
+        private @NonNull final Pdfium pdfium;
     }
 
     private Resources resources;

@@ -4,24 +4,32 @@ import com.sun.jna.Pointer;
 import io.github.abacef.pdf_renderer_pdfium.exceptions.PdfiumException;
 import io.github.abacef.pdfium.Pdfium;
 import io.github.abacef.pdfium.fpdf_formfill.FPDF_FORMFILLINFO;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.val;
 
 public class Form implements AutoCloseable {
 
-    @Getter
-    private Pointer formPointer;
+    @AllArgsConstructor
+    private static class Resources {
+        private @NonNull final Pointer formPointer;
+        private @NonNull final Pdfium pdfium;
+    }
 
-    private Pdfium pdfium;
+    private Resources resources;
 
     public Form(final Pdfium pdfium, final Document document) throws PdfiumException {
-        formPointer = pdfium.FPDFDOC_InitFormFillEnvironment(document.getDocumentPointer(), makeFormFillInfo());
+        val formPointer = pdfium.FPDFDOC_InitFormFillEnvironment(document.getDocumentPointer(), makeFormFillInfo());
         if (formPointer == null) {
             throw PdfiumException.exceptionNumberToException(pdfium.FPDF_GetLastError().intValue());
         }
-        this.pdfium = pdfium;
 
         pdfium.FORM_DoDocumentOpenAction(formPointer);
+        resources = new Resources(formPointer, pdfium);
+    }
+
+    public Pointer getFormPointer() {
+        return resources.formPointer;
     }
 
     private static FPDF_FORMFILLINFO makeFormFillInfo() {
@@ -32,11 +40,9 @@ public class Form implements AutoCloseable {
 
     @Override
     public void close() {
-        if (pdfium != null && formPointer != null) {
-            pdfium.FPDFDOC_ExitFormFillEnvironment(formPointer);
-
-            pdfium = null;
-            formPointer = null;
+        if (resources != null) {
+            resources.pdfium.FPDFDOC_ExitFormFillEnvironment(resources.formPointer);
+            resources = null;
         }
     }
 }

@@ -20,6 +20,8 @@ public class DocumentTest {
 
     private byte[] pdfBytes;
 
+    private Document document;
+
     @BeforeEach
     @SneakyThrows
     public void setupPdfium() {
@@ -36,36 +38,46 @@ public class DocumentTest {
         pdfBytes = Files.readAllBytes(Paths.get("src/test/resources/sample_doc.pdf"));
     }
 
+    @AfterEach
+    public void cleanupPdfium() {
+        if (document != null) {
+            document.close();
+        }
+        pdfium.FPDF_DestroyLibrary();
+        pdfium = null;
+    }
+
     @Test
     public void nonNullPdfium() {
         assertThrows(
                 NullPointerException.class,
-                () -> new Document(null, pdfBytes),
+                () -> document = new Document(null, pdfBytes),
                 "PDFium needs to be validated that it is not null");
     }
-
 
     @Test
     public void nonNullBytes() {
         assertThrows(
                 NullPointerException.class,
-                () -> new Document(pdfium, null),
-                "PDFium needs to be validated that it is not null");
+                () -> document = new Document(pdfium, null),
+                "PDFium needs to be validated that it is not null"
+        );
     }
 
     @Test
     @SneakyThrows
     public void happyPath() {
         try (val doc = new Document(pdfium, pdfBytes)) {
+            document = doc;
         }
     }
 
     @Test
     @SneakyThrows
     public void happyPathWithCloseAfterClose_doesNotDoAnythingBad() {
-        val doc = new Document(pdfium, pdfBytes);
-        doc.close();
-        doc.close();
+        document = new Document(pdfium, pdfBytes);
+        document.close();
+        document.close();
     }
 
     @Test
@@ -73,14 +85,8 @@ public class DocumentTest {
         val localBytes = new byte[] { 23, 45, 0 };
         assertThrows(
                 PdfiumException.class,
-                () -> new Document(pdfium, localBytes),
+                () -> document = new Document(pdfium, localBytes),
                 "Random bytes should make Pdfium throw an exception"
         );
-    }
-
-    @AfterEach
-    public void cleanupPdfium() {
-        pdfium.FPDF_DestroyLibrary();
-        pdfium = null;
     }
 }
