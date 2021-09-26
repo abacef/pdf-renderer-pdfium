@@ -60,7 +60,7 @@ public class DocumentTest {
         assertThrows(
                 NullPointerException.class,
                 () -> document = new Document(pdfium, null),
-                "PDFium needs to be validated that it is not null"
+                "PDF bytes needs to be validated that it is not null"
         );
     }
 

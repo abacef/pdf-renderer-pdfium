@@ -18,7 +18,7 @@ public class Form implements AutoCloseable {
 
     private Resources resources;
 
-    public Form(final Pdfium pdfium, final Document document) throws PdfiumException {
+    public Form(@NonNull final Pdfium pdfium, @NonNull final Document document) throws PdfiumException {
         val formPointer = pdfium.FPDFDOC_InitFormFillEnvironment(document.getDocumentPointer(), makeFormFillInfo());
         if (formPointer == null) {
             throw PdfiumException.exceptionNumberToException(pdfium.FPDF_GetLastError().intValue());

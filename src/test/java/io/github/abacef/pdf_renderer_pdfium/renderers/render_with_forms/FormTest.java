@@ -6,15 +6,20 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FormTest {
 
     private Document document;
 
     private Pdfium pdfium;
+
+    private Form form;
 
     @BeforeEach
     @SneakyThrows
@@ -36,10 +41,45 @@ public class FormTest {
 
     @AfterEach
     public void cleanupPdfium() {
+        if (form != null) {
+            form.close();
+        }
         document.close();
         pdfium.FPDF_DestroyLibrary();
         pdfium = null;
     }
 
+    @Test
+    public void nonNullPdfium() {
+        assertThrows(
+                NullPointerException.class,
+                () -> form = new Form(null, document),
+                "PDFium needs to be validated that it is not null"
+        );
+    }
 
+    @Test
+    public void nonNullDocument() {
+        assertThrows(
+                NullPointerException.class,
+                () -> form = new Form(pdfium, null),
+                "Document needs to be validated that is not null"
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    public void happyPath() {
+        try (val form = new Form(pdfium, document)) {
+            this.form = form;
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    public void happyPathDoubleClosed_DoesNotDoAnythingBad() {
+        form = new Form(pdfium, document);
+        form.close();
+        form.close();
+    }
 }
